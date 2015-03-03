@@ -1,2 +1,2 @@
-# Learning-Record
+# Learning_Record
 记录学习过程中遇到的问题,完成的代码,重要的知识点,以及心得体会.
