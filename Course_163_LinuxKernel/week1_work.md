@@ -33,11 +33,13 @@ int main(void)
 ##实验过程
 
 ###文件处理
-将实验代码保存到main.c，在终端输入gcc –S –o main.s main.c -m32
-![image](https://github.com/ZetaGo/Learning_Record/Course/master/img/gdb_1.png)
+将实验代码保存到main.c，在终端输入gcc -g -S -m32 -o main.s main.c
+![image](https://github.com/ZetaGo/Learning_Record/blob/master/Course_163_LinuxKernel/week1_img/20150305170155.png)
 
 编译成汇编语言
 
+![image](https://github.com/ZetaGo/Learning_Record/blob/master/Course_163_LinuxKernel/week1_img/20150305170314.png)
 
 以"."开头的是一些用于链接的辅助信息，将其删除简化，得到易于观察的代码
 
+![image](https://github.com/ZetaGo/Learning_Record/blob/master/Course_163_LinuxKernel/week1_img/20150305170430.png)
