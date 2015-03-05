@@ -31,4 +31,13 @@ int main(void)
 - 总结部分需要阐明自己对“计算机是如何工作的”理解   
 
 ##实验过程
-将实验代码保存到main.c，在命令行中确定路径后输入gcc –S –o main.s main.c -m32
+
+###文件处理
+将实验代码保存到main.c，在终端输入gcc –S –o main.s main.c -m32
+![image](https://github.com/ZetaGo/Learning_Record/Course/master/img/gdb_1.png)
+
+编译成汇编语言
+
+
+以"."开头的是一些用于链接的辅助信息，将其删除简化，得到易于观察的代码
+
