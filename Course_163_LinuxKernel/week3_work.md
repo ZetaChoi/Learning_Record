@@ -49,7 +49,7 @@ void set_task_stack_end_magic(struct task_struct *tsk)
 }
 ```
 可以看到这里 set_task_stack_end_magic把&init_task（0号进程）的尾地址保存成一个 STACK_END_MAGIC，作用是检测stackoverflow                  
-再看看0号进程
+再看看0号进程：
 ```c
 static struct signal_struct init_signals = INIT_SIGNALS(init_signals);
 15static struct sighand_struct init_sighand = INIT_SIGHAND(init_sighand);
@@ -65,3 +65,105 @@ EXPORT_SYMBOL(init_task);
 union thread_union init_thread_union __init_task_data =
 	{ INIT_THREAD_INFO(init_task) };
 ```
+用定义了一个tesk_struct类型的init_tesk
+```c
+struct task_struct {
+	u64 curr_chain_key;
+	int lockdep_depth;
+	unsigned int lockdep_recursion;
+	struct held_lock held_locks[MAX_LOCK_DEPTH];
+	gfp_t lockdep_reclaim_gfp;
+	int pid;
+	char comm[17];
+};
+```
+跟第二周的作业的PCB结构类似，可以看出是用来保存pid、栈地址等等信息的。              
+有了零号进程、经过一定的进程调度，就可以执行到我们需要的1号进程了，找到调度模块rest_init()        http://codelab.shiyanlou.com/xref/linux-3.18.6/init/main.c#680                                 
+```c
+static noinline void __init_refok rest_init(void)
+{
+	int pid;
+
+	rcu_scheduler_starting();
+	/*
+	 * We need to spawn init first so that it obtains pid 1, however
+	 * the init task will end up wanting to create kthreads, which, if
+	 * we schedule it before we create kthreadd, will OOPS.
+	 */
+	kernel_thread(kernel_init, NULL, CLONE_FS);
+	numa_default_policy();
+	pid = kernel_thread(kthreadd, NULL, CLONE_FS | CLONE_FILES);
+	rcu_read_lock();
+	kthreadd_task = find_task_by_pid_ns(pid, &init_pid_ns);
+	rcu_read_unlock();
+	complete(&kthreadd_done);
+
+	/*
+	 * The boot idle thread must execute schedule()
+	 * at least once to get things moving:
+	 */
+	init_idle_bootup_task(current);
+	schedule_preempt_disabled();
+	/* Call into cpu_idle with preempt disabled */
+	cpu_startup_entry(CPUHP_ONLINE);
+}
+```
+依据注释的提示，可以了解到进程创建跟kernel_thread有关，而且函数形参就是kernel_init。直接看到kernel_init。    http://codelab.shiyanlou.com/xref/linux-3.18.6/init/main.c#930               
+```c
+static int __ref kernel_init(void *unused)
+{
+	int ret;
+
+	kernel_init_freeable();
+	/* need to finish all async __init code before freeing the memory */
+	async_synchronize_full();
+	free_initmem();
+	mark_rodata_ro();
+	system_state = SYSTEM_RUNNING;
+	numa_default_policy();
+
+	flush_delayed_fput();
+
+	if (ramdisk_execute_command) {
+		ret = run_init_process(ramdisk_execute_command);
+		if (!ret)
+			return 0;
+		pr_err("Failed to execute %s (error %d)\n",
+		       ramdisk_execute_command, ret);
+	}
+
+	/*
+	 * We try each of these until one succeeds.
+	 *
+	 * The Bourne shell can be used instead of init if we are
+	 * trying to recover a really broken machine.
+	 */
+	if (execute_command) {
+		ret = run_init_process(execute_command);
+		if (!ret)
+			return 0;
+		pr_err("Failed to execute %s (error %d).  Attempting defaults...\n",
+			execute_command, ret);
+	}
+	if (!try_to_run_init_process("/sbin/init") ||
+	    !try_to_run_init_process("/etc/init") ||
+	    !try_to_run_init_process("/bin/init") ||
+	    !try_to_run_init_process("/bin/sh"))
+		return 0;
+
+	panic("No working init found.  Try passing init= option to kernel. "
+	      "See Linux Documentation/init.txt for guidance.");
+}
+```
+注意这里
+```c
+	if (!try_to_run_init_process("/sbin/init") ||
+	    !try_to_run_init_process("/etc/init") ||
+	    !try_to_run_init_process("/bin/init") ||
+	    !try_to_run_init_process("/bin/sh"))
+		return 0;
+```
+可以知道，ini文件就是放在这四个文件夹下的。                  
+
+##总结
+这周的作业做得真是苦不堪言啊，内核代码看的一头雾水无从下手，最终在看了论坛上几个大大的帖子之后稍微有了点思路，kernel虽然很庞大，但是本质上很多机制跟跟我们所知的确是大同小异，在进程调用这块，内核首先调用了0号进程，然后frok出1号，进入用户的进程。kernel中能学的东西还有很多很多。
