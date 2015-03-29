@@ -32,3 +32,9 @@ int mkdir(const char *path, mode_t mode);
 ![img](https://github.com/ZetaGo/Learning_Record/blob/master/Course_163_LinuxKernel/week4_img/20150329092154.png)
 
 ![img](https://github.com/ZetaGo/Learning_Record/blob/master/Course_163_LinuxKernel/week4_img/20150329092210.png)
+
+
+##实验分析与总结
+系统调用提供了一些访问硬件的接口，如在mkdir中，ax存放了系统调用号，abx存放path，acx存放mode。
+对这三个寄存器传参，可以很容易地调用系统功能。
+而库函数API封装了一些调用方法，让我们能简单地调用系统功能，同时减少了用户随意访问系统误操作的可能。
